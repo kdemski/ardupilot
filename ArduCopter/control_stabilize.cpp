@@ -16,9 +16,7 @@
 // stabilize_init - initialise stabilize controller
 bool Copter::stabilize_init(bool ignore_checks)
 {
-    
 
-    
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
     if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (get_pilot_desired_throttle(channel_throttle->control_in) > get_non_takeoff_throttle())) {
         return false;
@@ -38,11 +36,7 @@ void Copter::stabilize_run()
     float target_yaw_rate;
     float pilot_throttle_scaled;
     
-    //kd adc variables  conv factor is 3 since lean angle is in centi degrees so a 30 degree lean would be 3000, and the adc pulls in max 1023, so 3*1023 would give a lean angle of 30 degrees
-    float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
-    ch1 = hal.analogin->channel(15);
-    ch2 = hal.analogin->channel(13);
-    ch3 = hal.analogin->channel(14);
+
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed() || ap.throttle_zero || !motors.get_interlock()) {
@@ -61,7 +55,15 @@ void Copter::stabilize_run()
     get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, aparm.angle_max);
 
     
+    
+    
     //-------------------------------------------------------------------------------------------------------------------------------------------
+        //kd adc variables  conv factor is 3 since lean angle is in centi degrees so a 30 degree lean would be 3000, and the adc pulls in max 1023, so 3*1023 would give a lean angle of 30 degrees
+    float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
+    ch1 = hal.analogin->channel(15);
+    ch2 = hal.analogin->channel(13);
+    ch3 = hal.analogin->channel(14);
+    
     //kd should just change target_roll, and target_pitch with adc input  (need to know a good scaling factor). 
     adcpitch = ch1->voltage_average(); 
     target_pitch = target_pitch + adcpitch*convfactor*criticalfactor;
