@@ -6,10 +6,13 @@
  * control_stabilize.pde - init and run calls for stabilize flight mode
  */
 
-// stabilize_init - initialise stabilize controller
-bool Copter::stabilize_init(bool ignore_checks)
-{
-    
+
+
+
+
+
+
+
    //---------------------------------------------------------------------------------------------------------------------------------------------
     //kd adc variables  conv factor is 3 since lean angle is in centi degrees so a 30 degree lean would be 3000, and the adc pulls in max 1023, so 3*1023 would give a lean angle of 30 degrees
     float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
@@ -26,7 +29,15 @@ bool Copter::stabilize_init(bool ignore_checks)
         ch2 = hal.analogin->channel(13);
         ch3 = hal.analogin->channel(14);
     }
-    //---------------------------------------------------------------------------------------------------------------------------------------------    
+    //--------------------------------------------------------------------------------------------------------------------------------------------- 
+
+
+
+// stabilize_init - initialise stabilize controller
+bool Copter::stabilize_init(bool ignore_checks)
+{
+    
+   
     
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
     if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (get_pilot_desired_throttle(channel_throttle->control_in) > get_non_takeoff_throttle())) {

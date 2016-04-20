@@ -26,6 +26,25 @@
 #define POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX    10      // wind compensation estimates will only run when velocity is at or below this speed in cm/s
 
 
+    //---------------------------------------------------------------------------------------------------------------------------------------------
+    //kd adc variables  conv factor is 3 since lean angle is in centi degrees so a 30 degree lean would be 3000, and the adc pulls in max 1023, so 3*1023 would give a lean angle of 30 degrees
+    float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
+
+    //kd Analog In setup, may not be complete
+    AP_HAL::AnalogSource* ch1;
+    AP_HAL::AnalogSource* ch2;
+    AP_HAL::AnalogSource* ch3;
+
+    void setup (void) {
+        hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
+        //ch = hal.analogin->channel(13);
+        ch1 = hal.analogin->channel(15);
+        ch2 = hal.analogin->channel(13);
+        ch3 = hal.analogin->channel(14);
+    }
+//---------------------------------------------------------------------------------------------------------------------------------------------
+
+
 
 // mission state enumeration
 enum poshold_rp_mode {
@@ -79,26 +98,6 @@ static struct {
 // poshold_init - initialise PosHold controller
 bool Copter::poshold_init(bool ignore_checks)
 {
-    
-    
-    //---------------------------------------------------------------------------------------------------------------------------------------------
-    //kd adc variables  conv factor is 3 since lean angle is in centi degrees so a 30 degree lean would be 3000, and the adc pulls in max 1023, so 3*1023 would give a lean angle of 30 degrees
-    float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
-
-    //kd Analog In setup, may not be complete
-    AP_HAL::AnalogSource* ch1;
-    AP_HAL::AnalogSource* ch2;
-    AP_HAL::AnalogSource* ch3;
-
-//    void setup (void) {
-        hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
-        //ch = hal.analogin->channel(13);
-        ch1 = hal.analogin->channel(15);
-        ch2 = hal.analogin->channel(13);
-        ch3 = hal.analogin->channel(14);
-    //}
-//---------------------------------------------------------------------------------------------------------------------------------------------
-    
     
     // fail to initialise PosHold mode if no GPS lock
     if (!position_ok() && !ignore_checks) {
