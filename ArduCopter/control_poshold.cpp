@@ -33,13 +33,14 @@ float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
 AP_HAL::AnalogSource* ch1;
 AP_HAL::AnalogSource* ch2;
 AP_HAL::AnalogSource* ch3;
-ch1 = hal.analogin->channel(15);
-ch2 = hal.analogin->channel(13);
-ch3 = hal.analogin->channel(14);
-//void setup (void) {
-//    hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
-//    ch = hal.analogin->channel(13);
-//}
+
+void setup (void) {
+    hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
+    //ch = hal.analogin->channel(13);
+    ch1 = hal.analogin->channel(15);
+    ch2 = hal.analogin->channel(13);
+    ch3 = hal.analogin->channel(14);
+}
 //---------------------------------------------------------------------------------------------------------------------------------------------
 
 // mission state enumeration
