@@ -90,13 +90,13 @@ bool Copter::poshold_init(bool ignore_checks)
     AP_HAL::AnalogSource* ch2;
     AP_HAL::AnalogSource* ch3;
 
-    void setup (void) {
+//    void setup (void) {
         hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
         //ch = hal.analogin->channel(13);
         ch1 = hal.analogin->channel(15);
         ch2 = hal.analogin->channel(13);
         ch3 = hal.analogin->channel(14);
-    }
+    //}
 //---------------------------------------------------------------------------------------------------------------------------------------------
     
     
