@@ -7,37 +7,17 @@
  */
 
 
-
-
-
-
-
-
-   //---------------------------------------------------------------------------------------------------------------------------------------------
-    //kd adc variables  conv factor is 3 since lean angle is in centi degrees so a 30 degree lean would be 3000, and the adc pulls in max 1023, so 3*1023 would give a lean angle of 30 degrees
-    float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
-
     //kd Analog In setup, may not be complete
     AP_HAL::AnalogSource* ch1;
     AP_HAL::AnalogSource* ch2;
     AP_HAL::AnalogSource* ch3;
-
-    void setup (void) {
-        hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
-        //ch = hal.analogin->channel(13);
-        ch1 = hal.analogin->channel(15);
-        ch2 = hal.analogin->channel(13);
-        ch3 = hal.analogin->channel(14);
-    }
-    //--------------------------------------------------------------------------------------------------------------------------------------------- 
-
 
 
 // stabilize_init - initialise stabilize controller
 bool Copter::stabilize_init(bool ignore_checks)
 {
     
-   
+
     
     // if landed and the mode we're switching from does not have manual throttle and the throttle stick is too high
     if (motors.armed() && ap.land_complete && !mode_has_manual_throttle(control_mode) && (get_pilot_desired_throttle(channel_throttle->control_in) > get_non_takeoff_throttle())) {
@@ -57,6 +37,12 @@ void Copter::stabilize_run()
     float target_roll, target_pitch;
     float target_yaw_rate;
     float pilot_throttle_scaled;
+    
+    //kd adc variables  conv factor is 3 since lean angle is in centi degrees so a 30 degree lean would be 3000, and the adc pulls in max 1023, so 3*1023 would give a lean angle of 30 degrees
+    float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
+    ch1 = hal.analogin->channel(15);
+    ch2 = hal.analogin->channel(13);
+    ch3 = hal.analogin->channel(14);
 
     // if not armed set throttle to zero and exit immediately
     if (!motors.armed() || ap.throttle_zero || !motors.get_interlock()) {

@@ -25,7 +25,7 @@
 #define POSHOLD_STICK_RELEASE_SMOOTH_ANGLE      1800    // max angle required (in centi-degrees) after which the smooth stick release effect is applied
 #define POSHOLD_WIND_COMP_ESTIMATE_SPEED_MAX    10      // wind compensation estimates will only run when velocity is at or below this speed in cm/s
 
-
+/*
     //---------------------------------------------------------------------------------------------------------------------------------------------
     //kd adc variables  conv factor is 3 since lean angle is in centi degrees so a 30 degree lean would be 3000, and the adc pulls in max 1023, so 3*1023 would give a lean angle of 30 degrees
     float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
@@ -43,7 +43,7 @@
         ch3 = hal.analogin->channel(14);
     }
 //---------------------------------------------------------------------------------------------------------------------------------------------
-
+*/
 
 
 // mission state enumeration
@@ -221,13 +221,13 @@ void Copter::poshold_run()
         // convert pilot input to lean angles
         get_pilot_desired_lean_angles(channel_roll->control_in, channel_pitch->control_in, target_roll, target_pitch, aparm.angle_max);
 
-        //-------------------------------------------------------------------------------------------------------------------------------------------
+       /* //-------------------------------------------------------------------------------------------------------------------------------------------
         //kd should just change target_roll, and target_pitch with adc input  (need to know a good scaling factor). 
         adcpitch = ch1->voltage_average(); 
         target_pitch = target_pitch + adcpitch*convfactor*criticalfactor;
         //target_roll = target_roll + adcroll*cfactor;
         //---------------------------------------------------------------------------------------------------------------------------------------------
-        
+        */
         
         // convert inertial nav earth-frame velocities to body-frame
         // To-Do: move this to AP_Math (or perhaps we already have a function to do this)
