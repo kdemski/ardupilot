@@ -30,12 +30,16 @@
 float adcroll = 0, adcpitch = 0, criticalfactor = 1, convfactor = 3;
 
 //kd Analog In setup, may not be complete
-AP_HAL::AnalogSource* ch;
-ch = hal.analogin->channel(13);
-void setup (void) {
-    hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
-    ch = hal.analogin->channel(13);
-}
+AP_HAL::AnalogSource* ch1;
+AP_HAL::AnalogSource* ch2;
+AP_HAL::AnalogSource* ch3;
+ch1 = hal.analogin->channel(15);
+ch2 = hal.analogin->channel(13);
+ch3 = hal.analogin->channel(14);
+//void setup (void) {
+//    hal.console->printf("Starting AP_HAL::AnalogIn test\r\n");
+//    ch = hal.analogin->channel(13);
+//}
 //---------------------------------------------------------------------------------------------------------------------------------------------
 
 // mission state enumeration
@@ -214,7 +218,7 @@ void Copter::poshold_run()
 
         //-------------------------------------------------------------------------------------------------------------------------------------------
         //kd should just change target_roll, and target_pitch with adc input  (need to know a good scaling factor). 
-        adcpitch = ch->voltage_average(); 
+        adcpitch = ch1->voltage_average(); 
         target_pitch = target_pitch + adcpitch*convfactor*criticalfactor;
         //target_roll = target_roll + adcroll*cfactor;
         //---------------------------------------------------------------------------------------------------------------------------------------------
