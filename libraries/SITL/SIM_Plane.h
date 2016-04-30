@@ -43,7 +43,6 @@ protected:
     const float air_density = 1.225; // kg/m^3 at sea level, ISA conditions
     float angle_of_attack;
     float beta;
-    Vector3f velocity_bf;
 
     struct {
         // from last_letter skywalker_2013/aerodynamics.yaml
@@ -93,6 +92,8 @@ protected:
 
     float thrust_scale;
     bool reverse_thrust;
+    bool elevons;
+    bool vtail;
 
     float liftCoeff(float alpha) const;
     float dragCoeff(float alpha) const;

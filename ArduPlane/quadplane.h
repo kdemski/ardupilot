@@ -7,6 +7,16 @@
 #include <AC_AttitudeControl/AC_PosControl.h>
 #include <AC_WPNav/AC_WPNav.h>
 
+// uncomment this to force a different motor class
+// #define AP_MOTORS_FORCE_CLASS AP_MotorsTri
+
+
+#ifdef AP_MOTORS_FORCE_CLASS
+#define AP_MOTORS_CLASS AP_MOTORS_FORCE_CLASS
+#else
+#define AP_MOTORS_CLASS AP_MotorsMulticopter
+#endif
+
 /*
   QuadPlane specific functionality
  */
@@ -42,7 +52,7 @@ public:
         return available() && assisted_flight;
     }
     
-    bool handle_do_vtol_transition(const mavlink_command_long_t &packet);
+    bool handle_do_vtol_transition(enum MAV_VTOL_STATE state);
 
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
@@ -59,6 +69,13 @@ public:
         return last_throttle * 0.1f;
     }
 
+    // return desired forward throttle percentage
+    int8_t forward_throttle_pct(void);        
+    float get_weathervane_yaw_rate_cds(void);
+
+    // see if we are flying from vtol point of view
+    bool is_flying_vtol(void);
+    
     struct PACKED log_QControl_Tuning {
         LOG_PACKET_HEADER;
         uint64_t time_us;
@@ -81,16 +98,16 @@ private:
 
     AP_InertialNav_NavEKF inertial_nav{ahrs};
 
-    AC_P                    p_pos_xy{1};
+    AC_P                    p_pos_xy{0.7};
     AC_P                    p_alt_hold{1};
     AC_P                    p_vel_z{5};
     AC_PID                  pid_accel_z{0.3, 1, 0, 800, 10, 0.02};
-    AC_PI_2D                pi_vel_xy{1.0, 0.5, 1000, 5, 0.02};
+    AC_PI_2D                pi_vel_xy{0.7, 0.35, 1000, 5, 0.02};
 
     AP_Int8 frame_class;
     AP_Int8 frame_type;
     
-    AP_MotorsMulticopter *motors;
+    AP_MOTORS_CLASS *motors;
     AC_AttitudeControl_Multi *attitude_control;
     AC_PosControl *pos_control;
     AC_WPNav *wp_nav;
@@ -170,6 +187,20 @@ private:
     
     AP_Int8 enable;
     AP_Int8 transition_pitch_max;
+
+    struct {
+        AP_Float gain;
+        float integrator;
+        uint32_t lastt_ms;
+        int8_t last_pct;
+    } vel_forward;
+
+    struct {
+        AP_Float gain;
+        AP_Float min_roll;
+        uint32_t last_pilot_input_ms;
+        float last_output;
+    } weathervane;
     
     bool initialised;
     
@@ -213,6 +244,7 @@ private:
         int32_t yaw_cd;
         float speed_scale;
         Vector2f target_velocity;
+        float max_speed;
     } land;
 
     enum frame_class {
@@ -220,6 +252,7 @@ private:
         FRAME_CLASS_HEXA=1,
         FRAME_CLASS_OCTA=2,
         FRAME_CLASS_OCTAQUAD=3,
+        FRAME_CLASS_Y6=4,
     };
 
     struct {

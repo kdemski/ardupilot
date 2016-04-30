@@ -622,10 +622,10 @@ bool GCS_MAVLINK::try_send_message(enum ap_message id)
         return false;
     }
 
-    // if we don't have at least 1ms remaining before the main loop
+    // if we don't have at least 0.2ms remaining before the main loop
     // wants to fire then don't send a mavlink message. We want to
     // prioritise the main flight control loop over communications
-    if (!plane.in_mavlink_delay && plane.scheduler.time_available_usec() < 1200) {
+    if (!plane.in_mavlink_delay && plane.scheduler.time_available_usec() < 200) {
         plane.gcs_out_of_time = true;
         return false;
     }
@@ -1104,11 +1104,11 @@ GCS_MAVLINK::data_stream_send(void)
   handle a request to switch to guided mode. This happens via a
   callback from handle_mission_item()
  */
-void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
+bool GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
     if (plane.control_mode != GUIDED) {
         // only accept position updates when in GUIDED mode
-        return;
+        return false;
     }
     plane.guided_WP_loc = cmd.content.location;
     
@@ -1119,6 +1119,7 @@ void GCS_MAVLINK::handle_guided_request(AP_Mission::Mission_Command &cmd)
     }
 
     plane.set_guided_WP();
+    return true;
 }
 
 /*
@@ -1306,6 +1307,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
         case MAV_CMD_DO_MOUNT_CONTROL:
 #if MOUNT == ENABLED
             plane.camera_mount.control(packet.param1, packet.param2, packet.param3, (MAV_MOUNT_MODE) packet.param7);
+            result = MAV_RESULT_ACCEPTED;
 #endif
             break;
 
@@ -1625,7 +1627,11 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
             break;
             
         case MAV_CMD_DO_VTOL_TRANSITION:
-            result = plane.quadplane.handle_do_vtol_transition(packet);
+            if (!plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)packet.param1)) {
+                result = MAV_RESULT_FAILED;
+            } else {
+                result = MAV_RESULT_ACCEPTED;
+            }
             break;
             
         default:
@@ -1847,6 +1853,7 @@ void GCS_MAVLINK::handleMessage(mavlink_message_t* msg)
 
         if (hal.rcin->set_overrides(v, 8)) {
             plane.failsafe.last_valid_rc_ms = AP_HAL::millis();
+            plane.failsafe.AFS_last_valid_rc_ms =  plane.failsafe.last_valid_rc_ms;
         }
 
         // a RC override message is consiered to be a 'heartbeat' from

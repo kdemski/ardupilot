@@ -360,7 +360,7 @@ void SITL_State::_simulator_servos(SITL::Aircraft::sitl_input &input)
         altitude = 0;
     }
     if (altitude < 60) {
-        wind_speed *= altitude / 60;
+        wind_speed *= sqrtf(MAX(altitude / 60, 0));
     }
     input.wind.speed = wind_speed;
     input.wind.direction = _sitl?_sitl->wind_direction:0;
@@ -487,7 +487,7 @@ float SITL_State::height_agl(void)
         location.lat = _sitl->state.latitude*1.0e7;
         location.lng = _sitl->state.longitude*1.0e7;
 
-        if (_terrain->height_amsl(location, terrain_height_amsl)) {
+        if (_terrain->height_amsl(location, terrain_height_amsl, false)) {
             return _sitl->state.altitude - terrain_height_amsl;
         }
     }

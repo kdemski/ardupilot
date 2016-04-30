@@ -32,6 +32,8 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         // once landed, post some landing statistics to the GCS
         auto_state.post_landing_stats = false;
 
+        nav_controller->set_data_is_stale();
+
         // reset loiter start time. New command is a new loiter
         loiter.start_time_ms = 0;
 
@@ -216,6 +218,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
                                        cmd.content.mount_control.yaw);
         break;
 #endif
+
+    case MAV_CMD_DO_VTOL_TRANSITION:
+        plane.quadplane.handle_do_vtol_transition((enum MAV_VTOL_STATE)cmd.content.do_vtol_transition.target_state);
+        break;
     }
 
     return true;
@@ -337,7 +343,6 @@ void Plane::do_RTL(void)
         loiter.direction = 1;
     }
 
-    update_flight_stage();
     setup_glide_slope();
     setup_turn_angle();
 
@@ -360,6 +365,7 @@ void Plane::do_takeoff(const AP_Mission::Mission_Command& cmd)
     next_WP_loc.lng = home.lng + 10;
     auto_state.takeoff_speed_time_ms = 0;
     auto_state.takeoff_complete = false;                            // set flag to use gps ground course during TO.  IMU will be doing yaw drift correction
+    auto_state.height_below_takeoff_to_level_off_cm = 0;
     // Flag also used to override "on the ground" throttle disable
 
     // zero locked course
@@ -999,16 +1005,8 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 void Plane::exit_mission_callback()
 {
     if (control_mode == AUTO) {
-        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Returning to HOME");
-        memset(&auto_rtl_command, 0, sizeof(auto_rtl_command));
-        auto_rtl_command.content.location = 
-            rally.calc_best_rally_or_home_location(current_loc, get_RTL_altitude());
-        auto_rtl_command.id = MAV_CMD_NAV_LOITER_UNLIM;
-        setup_terrain_target_alt(auto_rtl_command.content.location);
-        update_flight_stage();
-        setup_glide_slope();
-        setup_turn_angle();
-        start_command(auto_rtl_command);
+        set_mode(RTL);
+        gcs_send_text_fmt(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
 }
 

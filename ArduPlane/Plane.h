@@ -345,6 +345,10 @@ private:
         uint32_t ch3_timer_ms;
         
         uint32_t last_valid_rc_ms;
+
+        //keeps track of the last valid rc as it relates to the AFS system
+        //Does not count rc inputs as valid if the standard failsafe is on
+        uint32_t AFS_last_valid_rc_ms;
     } failsafe;
 
     // A counter used to count down valid gps fixes to allow the gps estimate to settle
@@ -464,6 +468,9 @@ private:
 
         // Minimum pitch to hold during takeoff command execution.  Hundredths of a degree
         int16_t takeoff_pitch_cd;
+
+        // Begin leveling out the enforced takeoff pitch angle min at this height to reduce/eliminate overshoot
+        int32_t height_below_takeoff_to_level_off_cm;
 
         // the highest airspeed we have reached since entering AUTO. Used
         // to control ground takeoff
@@ -654,9 +661,6 @@ private:
     // The location of the active waypoint in Guided mode.
     struct Location guided_WP_loc {};
 
-    // special purpose command used only after mission completed to return vehicle to home or rally point
-    struct AP_Mission::Mission_Command auto_rtl_command;
-
     // Altitude control
     struct {
         // target altitude above sea level in cm. Used for barometric
@@ -685,23 +689,31 @@ private:
     // This is the time between calls to the DCM algorithm and is the Integration time for the gyros.
     float G_Dt = 0.02f;
 
-    // Performance monitoring
-    // Timer used to accrue data and trigger recording of the performanc monitoring log message
-    uint32_t perf_mon_timer = 0;
+    struct {
+        // Performance monitoring
+        // Timer used to accrue data and trigger recording of the performanc monitoring log message
+        uint32_t start_ms;
 
-    // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
-    uint32_t G_Dt_max = 0;
-    uint32_t G_Dt_min = 0;
+        // The maximum and minimum main loop execution time recorded in the current performance monitoring interval
+        uint32_t G_Dt_max;
+        uint32_t G_Dt_min;
 
-    // System Timers
-    // Time in microseconds of start of main control loop
-    uint32_t fast_loopTimer_us = 0;
+        // System Timers
+        // Time in microseconds of start of main control loop
+        uint32_t fast_loopTimer_us;
 
-    // Number of milliseconds used in last main loop cycle
-    uint32_t delta_us_fast_loop = 0;
+        // Number of milliseconds used in last main loop cycle
+        uint32_t delta_us_fast_loop;
 
-    // Counter of main loop executions.  Used for performance monitoring and failsafe processing
-    uint16_t mainLoop_count = 0;
+        // Counter of main loop executions.  Used for performance monitoring and failsafe processing
+        uint16_t mainLoop_count;
+
+        // number of long loops
+        uint16_t num_long;
+
+        // accumulated lost log messages
+        uint32_t last_log_dropped;
+    } perf;
 
     // Camera/Antenna mount tracking and stabilisation stuff
 #if MOUNT == ENABLED
@@ -839,7 +851,6 @@ private:
     bool verify_loiter_heading(bool init);
     void log_picture();
     void exit_mission_callback();
-    void update_commands(void);
     void mavlink_delay(uint32_t ms);
     void read_control_switch();
     uint8_t readSwitch(void);
@@ -938,6 +949,7 @@ private:
     void takeoff_calc_roll(void);
     void takeoff_calc_pitch(void);
     int8_t takeoff_tail_hold(void);
+    int16_t get_takeoff_pitch_min_cd(void);
     void print_hit_enter();
     void ahrs_update();
     void update_speed_height(void);

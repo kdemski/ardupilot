@@ -194,14 +194,11 @@ void Plane::Log_Write_Attitude(void)
 struct PACKED log_Performance {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint32_t loop_time;
+    uint16_t num_long;
     uint16_t main_loop_count;
     uint32_t g_dt_max;
-    int16_t  gyro_drift_x;
-    int16_t  gyro_drift_y;
-    int16_t  gyro_drift_z;
-    uint8_t  i2c_lockup_count;
-    uint16_t ins_error_count;
+    uint32_t g_dt_min;
+    uint32_t log_dropped;
 };
 
 // Write a performance monitoring packet. Total length : 19 bytes
@@ -210,16 +207,13 @@ void Plane::Log_Write_Performance()
     struct log_Performance pkt = {
         LOG_PACKET_HEADER_INIT(LOG_PERFORMANCE_MSG),
         time_us         : AP_HAL::micros64(),
-        loop_time       : millis() - perf_mon_timer,
-        main_loop_count : mainLoop_count,
-        g_dt_max        : G_Dt_max,
-        gyro_drift_x    : (int16_t)(ahrs.get_gyro_drift().x * 1000),
-        gyro_drift_y    : (int16_t)(ahrs.get_gyro_drift().y * 1000),
-        gyro_drift_z    : (int16_t)(ahrs.get_gyro_drift().z * 1000),
-        i2c_lockup_count: hal.i2c->lockup_count(),
-        ins_error_count  : ins.error_count()
+        num_long        : perf.num_long,
+        main_loop_count : perf.mainLoop_count,
+        g_dt_max        : perf.G_Dt_max,
+        g_dt_min        : perf.G_Dt_min,
+        log_dropped     : DataFlash.num_dropped() - perf.last_log_dropped
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Startup {
@@ -237,7 +231,7 @@ void Plane::Log_Write_Startup(uint8_t type)
         startup_type    : type,
         command_total   : mission.num_commands()
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 struct PACKED log_Control_Tuning {
@@ -278,7 +272,6 @@ void Plane::Log_Write_TECS_Tuning(void)
 struct PACKED log_Nav_Tuning {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint16_t yaw;
     float wp_distance;
     int16_t target_bearing_cd;
     int16_t nav_bearing_cd;
@@ -287,6 +280,7 @@ struct PACKED log_Nav_Tuning {
     float   altitude;
     uint32_t groundspeed_cm;
     float   xtrack_error;
+    float   xtrack_error_i;
 };
 
 // Write a navigation tuning packet
@@ -295,7 +289,6 @@ void Plane::Log_Write_Nav_Tuning()
     struct log_Nav_Tuning pkt = {
         LOG_PACKET_HEADER_INIT(LOG_NTUN_MSG),
         time_us             : AP_HAL::micros64(),
-        yaw                 : (uint16_t)ahrs.yaw_sensor,
         wp_distance         : auto_state.wp_distance,
         target_bearing_cd   : (int16_t)nav_controller->target_bearing_cd(),
         nav_bearing_cd      : (int16_t)nav_controller->nav_bearing_cd(),
@@ -303,7 +296,8 @@ void Plane::Log_Write_Nav_Tuning()
         airspeed_cm         : (int16_t)airspeed.get_airspeed_cm(),
         altitude            : barometer.get_altitude(),
         groundspeed_cm      : (uint32_t)(gps.ground_speed()*100),
-        xtrack_error        : nav_controller->crosstrack_error()
+        xtrack_error        : nav_controller->crosstrack_error(),
+        xtrack_error_i      : nav_controller->crosstrack_error_integrator()
     };
     DataFlash.WriteBlock(&pkt, sizeof(pkt));
 }
@@ -432,7 +426,7 @@ void Plane::Log_Arm_Disarm() {
         arm_state               : arming.is_armed(),
         arm_checks              : arming.get_enabled_checks()      
     };
-    DataFlash.WriteBlock(&pkt, sizeof(pkt));
+    DataFlash.WriteCriticalBlock(&pkt, sizeof(pkt));
 }
 
 void Plane::Log_Write_GPS(uint8_t instance)
@@ -485,13 +479,13 @@ void Plane::Log_Write_Home_And_Origin()
 const struct LogStructure Plane::log_structure[] = {
     LOG_COMMON_STRUCTURES,
     { LOG_PERFORMANCE_MSG, sizeof(log_Performance), 
-      "PM",  "QIHIhhhBH", "TimeUS,LTime,MLC,gDt,GDx,GDy,GDz,I2CErr,INSErr" },
+      "PM",  "QHHIII",  "TimeUS,NLon,NLoop,MaxT,MinT,LogDrop" },
     { LOG_STARTUP_MSG, sizeof(log_Startup),         
       "STRT", "QBH",         "TimeUS,SType,CTot" },
     { LOG_CTUN_MSG, sizeof(log_Control_Tuning),     
       "CTUN", "Qcccchhh",    "TimeUS,NavRoll,Roll,NavPitch,Pitch,ThrOut,RdrOut,ThrDem" },
     { LOG_NTUN_MSG, sizeof(log_Nav_Tuning),         
-      "NTUN", "QCfccccfIf",  "TimeUS,Yaw,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM,XT" },
+      "NTUN", "QfccccfIff",  "TimeUS,WpDist,TargBrg,NavBrg,AltErr,Arspd,Alt,GSpdCM,XT,XTi" },
     { LOG_SONAR_MSG, sizeof(log_Sonar),             
       "SONR", "QHfffbBf",   "TimeUS,DistCM,Volt,BaroAlt,GSpd,Thr,Cnt,Corr" },
     { LOG_ARM_DISARM_MSG, sizeof(log_Arm_Disarm),

@@ -39,7 +39,7 @@ public:
     // Update of the estimated height and height rate internal state
     // Update of the inertial speed rate internal state
     // Should be called at 50Hz or greater
-    void update_50hz(float hgt_afe);
+    void update_50hz(void);
 
     // Update the control loop calculations
     void update_pitch_throttle(int32_t hgt_dem_cm,
@@ -85,6 +85,11 @@ public:
     // return landing sink rate
     float get_land_sinkrate(void) const {
         return _land_sink;
+    }
+
+    // return landing airspeed
+    float get_land_airspeed(void) const {
+        return _landAirspeed;
     }
 
     // return height rate demand, in m/s
@@ -350,9 +355,6 @@ private:
 
     // current time constant
     float timeConstant(void) const;
-
-    // return true if on landing approach
-    bool is_on_land_approach(bool include_segment_between_NORMAL_and_APPROACH);
 };
 
 #define TECS_LOG_FORMAT(msg) { msg, sizeof(AP_TECS::log_TECS_Tuning),	\

@@ -20,7 +20,7 @@ public:
 	// Update the internal state of the height and height rate estimator
 	// Update of the inertial speed rate estimate internal state
 	// Should be called at 50Hz or faster
-	virtual void update_50hz(float height_above_field) = 0;
+	virtual void update_50hz(void) = 0;
 
 	/**
 	   stages of flight so the altitude controller can choose to
@@ -68,8 +68,11 @@ public:
 	// return maximum climb rate
 	virtual float get_max_climbrate(void) const = 0;
 
-	// return landing sink rate
-	virtual float get_land_sinkrate(void) const = 0;
+    // return landing sink rate
+    virtual float get_land_sinkrate(void) const = 0;
+
+    // return landing airspeed
+    virtual float get_land_airspeed(void) const = 0;
 
 	// set path_proportion accessor
     virtual void set_path_proportion(float path_proportion) = 0;

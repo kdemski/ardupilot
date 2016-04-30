@@ -80,18 +80,22 @@ bool Aircraft::parse_home(const char *home_str, Location &loc, float &yaw_degree
     }
     char *lat_s = strtok_r(s, ",", &saveptr);
     if (!lat_s) {
+        free(s);
         return false;
     }
     char *lon_s = strtok_r(NULL, ",", &saveptr);
     if (!lon_s) {
+        free(s);
         return false;
     }
     char *alt_s = strtok_r(NULL, ",", &saveptr);
     if (!alt_s) {
+        free(s);
         return false;
     }
     char *yaw_s = strtok_r(NULL, ",", &saveptr);
     if (!yaw_s) {
+        free(s);
         return false;
     }
 
@@ -287,7 +291,7 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm) const
     fdm.rollDeg  = degrees(r);
     fdm.pitchDeg = degrees(p);
     fdm.yawDeg   = degrees(y);
-    fdm.airspeed = airspeed;
+    fdm.airspeed = airspeed_pitot;
     fdm.battery_voltage = battery_voltage;
     fdm.battery_current = battery_current;
     fdm.rpm1 = rpm1;
@@ -360,9 +364,18 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
     Vector3f old_position = position;
     position += velocity_ef * delta_time;
 
-    // assume zero wind for now
-    airspeed = velocity_ef.length();
+    // velocity relative to air mass, in earth frame
+    velocity_air_ef = velocity_ef - wind_ef;
+    
+    // velocity relative to airmass in body frame
+    velocity_air_bf = dcm.transposed() * velocity_air_ef;
+    
+    // airspeed 
+    airspeed = velocity_air_ef.length();
 
+    // airspeed as seen by a fwd pitot tube (limited to 120m/s)
+    airspeed_pitot = constrain_float(velocity_air_bf * Vector3f(1, 0, 0), 0, 120);
+    
     // constrain height to the ground
     if (on_ground(position)) {
         if (!on_ground(old_position) && AP_HAL::millis() - last_ground_contact_ms > 1000) {
@@ -371,6 +384,15 @@ void Aircraft::update_dynamics(const Vector3f &rot_accel)
         }
         position.z = -(ground_level + frame_height - home.alt*0.01f);
     }
+}
+
+/*
+  update wind vector
+*/
+void Aircraft::update_wind(const struct sitl_input &input)
+{
+    // wind vector in earth frame
+    wind_ef = Vector3f(cosf(radians(input.wind.direction)), sinf(radians(input.wind.direction)), 0) * input.wind.speed;
 }
     
 } // namespace SITL

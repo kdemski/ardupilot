@@ -641,10 +641,10 @@ bool GCS_MAVLINK::handle_mission_item(mavlink_message_t *msg, AP_Mission &missio
     if (packet.current == 2) {                                               
         // current = 2 is a flag to tell us this is a "guided mode"
         // waypoint and not for the mission
-        handle_guided_request(cmd);
+        result = (handle_guided_request(cmd) ? MAV_MISSION_ACCEPTED
+                                             : MAV_MISSION_ERROR) ;
 
         // verify we received the command
-        result = MAV_MISSION_ACCEPTED;
         goto mission_ack;
     }
 
@@ -1121,11 +1121,12 @@ void GCS_MAVLINK::send_ahrs(AP_AHRS &ahrs)
  */
 void GCS_MAVLINK::send_statustext_all(MAV_SEVERITY severity, const char *fmt, ...)
 {
-    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] {};
+    char text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
     va_list arg_list;
     va_start(arg_list, fmt);
-    hal.util->vsnprintf((char *)text, sizeof(text), fmt, arg_list);
+    hal.util->vsnprintf((char *)text, sizeof(text)-1, fmt, arg_list);
     va_end(arg_list);
+    text[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = 0;
     send_statustext(severity, mavlink_active, text);
 }
 

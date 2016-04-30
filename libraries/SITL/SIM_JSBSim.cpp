@@ -233,6 +233,7 @@ bool JSBSim::start_JSBSim(void)
 
     started_jsbsim = true;
     check_stdout();
+    close(devnull);
     return true;
 }
 
@@ -420,6 +421,7 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     location.alt = fdm.agl*100 + home.alt;
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
     airspeed = fdm.vcas * FEET_TO_METERS;
+    airspeed_pitot = airspeed;
 
     rpm1 = fdm.rpm[0];
     rpm2 = fdm.rpm[1];
